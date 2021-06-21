@@ -19,6 +19,29 @@ class _HomeState extends State<Home> {
   List _toDoList = [];
 
   @override
+  void initState() {
+    super.initState();
+    _readData().then((data) {
+      setState(() {
+        _toDoList = json.decode(data);
+      });
+    });
+  }
+
+  TextEditingController _textoController = TextEditingController();
+
+  void _addToDo() {
+    setState(() {
+      Map<String, dynamic> newToDo = Map();
+      newToDo["title"] = _textoController.text;
+      _textoController.text = "";
+      newToDo["ok"] = false;
+      _toDoList.add(newToDo);
+      _saveData();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -26,37 +49,75 @@ class _HomeState extends State<Home> {
         backgroundColor: Colors.blueAccent,
         title: Text(
           "Lista de Tarefas",
-          textAlign: TextAlign.center,
           style: TextStyle(color: Colors.blue[900], fontSize: 20),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(10),
-        child: Column(
-          children: [
-            Row(
+      body: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.fromLTRB(17, 1, 7, 1),
+            child: Row(
               children: [
                 Expanded(
                   child: TextField(
+                    controller: _textoController,
                     decoration: InputDecoration(
                       labelText: "Nova Tarefa",
                       hintText: "Digite Aqui",
-                      hintStyle: TextStyle(color: Colors.blue),
+                      hintStyle: TextStyle(color: Colors.red[300]),
                       labelStyle: TextStyle(color: Colors.blueAccent),
                     ),
                   ),
                 ),
                 RaisedButton(
                   color: Colors.blueAccent,
-                  onPressed: () {},
                   child: Text(" ADD "),
+                  onPressed: _addToDo,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.only(top: 10),
+              itemCount: _toDoList.length,
+              itemBuilder: buildItem,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget buildItem(context, index) {
+    return Dismissible(
+        key: Key(DateTime.now().millisecondsSinceEpoch.toString()),
+        background: Container(
+          color: Colors.red,
+          child: Align(
+            alignment: Alignment(-0.9, 0),
+            child: Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        direction: DismissDirection.startToEnd,
+        child: CheckboxListTile(
+          title: Text(_toDoList[index]["title"]),
+          value: _toDoList[index]["ok"],
+          secondary: CircleAvatar(
+            child: Icon(_toDoList[index]["ok"] ? Icons.check : Icons.error),
+          ),
+          onChanged: (c) {
+            setState(
+              () {
+                _toDoList[index]["ok"] = c;
+                _saveData();
+              },
+            );
+          },
+        ));
   }
 
   Future<File> _getFile() async {
